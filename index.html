@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Haushaltsplan: Putzen, Wäsche, Einkauf, Verwaltung, Wartung</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="theme-color" content="#12171B">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Haushaltsplan">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -172,9 +180,18 @@ footer{padding:30px 0 50px;color:var(--muted);font-size:.88rem;border-top:1px so
       <label class="inline"><input type="checkbox" id="onlyOpen"> Nur offene und fällige</label>
       <button type="button" class="btn" id="resetBtn">Häkchen zurücksetzen</button>
       <button type="button" class="btn" id="printBtn">Drucken</button>
+      <button type="button" class="btn" id="exportBtn" title="Sicherungsdatei mit allen Häkchen herunterladen">Sicherung speichern</button>
+      <button type="button" class="btn" id="importBtn" title="Zuvor gespeicherte Sicherungsdatei laden">Sicherung laden</button>
+      <input type="file" id="importFile" accept="application/json" class="sr">
       <span class="count" id="count" aria-live="polite"></span>
     </div>
   </div>
+</div>
+
+<div class="wrap" id="installHint" hidden>
+  <p style="background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-size:.9rem;color:var(--muted);margin:16px 0 0">
+    Tipp: Über „Zum Home-Bildschirm hinzufügen“ im Browser-Menü läuft die Seite wie eine App und die Häkchen bleiben auf diesem Handy zuverlässiger erhalten.
+  </p>
 </div>
 
 <div class="wrap">
@@ -554,6 +571,7 @@ const KEY = "haushaltsplan-erledigt-v1";
 let store = {};
 try { store = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch(e) { store = {}; }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(store)); } catch(e) {} }
+if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
 
 const state = { cycles:new Set(), area:"", q:"", view:"cycle", onlyOpen:false };
 
@@ -603,6 +621,37 @@ document.getElementById("resetBtn").addEventListener("click",()=>{
   if(confirm("Alle gespeicherten Häkchen auf diesem Gerät löschen?")){ store={}; save(); render(); }
 });
 document.getElementById("printBtn").addEventListener("click",()=>window.print());
+
+document.getElementById("exportBtn").addEventListener("click",()=>{
+  const blob = new Blob([JSON.stringify(store, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "haushaltsplan-sicherung-" + todayStr() + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+});
+const importFileEl = document.getElementById("importFile");
+document.getElementById("importBtn").addEventListener("click",()=>importFileEl.click());
+importFileEl.addEventListener("change",()=>{
+  const file = importFileEl.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      if(typeof data !== "object" || data===null) throw new Error("ungültig");
+      if(confirm("Gespeicherte Sicherung laden? Aktuelle Häkchen auf diesem Gerät werden dabei ersetzt.")){
+        store = data; save(); render();
+      }
+    }catch(e){ alert("Diese Datei ist keine gültige Sicherung."); }
+    importFileEl.value = "";
+  };
+  reader.readAsText(file);
+});
+
+if(!window.matchMedia("(display-mode: standalone)").matches && !window.navigator.standalone){
+  document.getElementById("installHint").hidden = false;
+}
 
 document.getElementById("stats").textContent = TASKS.length+" Aufgaben in "+AREAS.length+" Bereichen und "+CYCLES.length+" Rhythmen";
 
