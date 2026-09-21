@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Haushaltsplan: Putzen, Wäsche, Einkauf, Verwaltung, Wartung</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F1F4F3; --surface:#FFFFFF; --ink:#1E2932; --muted:#56646F; --line:#D3DADD; --chip:#E3E9EB;
+  --red:#C23E37; --yellow:#C99A10; --blue:#2D69A8; --green:#3A8656; --slate:#7B8892; --focus:#2D69A8;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12171B; --surface:#1A2126; --ink:#E2E8EB; --muted:#9BA8B1; --line:#2D3841; --chip:#232E36;
+    --red:#E0675F; --yellow:#E3BD48; --blue:#6EA2D9; --green:#6CBA86; --slate:#8D9AA4; --focus:#6EA2D9;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12171B; --surface:#1A2126; --ink:#E2E8EB; --muted:#9BA8B1; --line:#2D3841; --chip:#232E36;
+  --red:#E0675F; --yellow:#E3BD48; --blue:#6EA2D9; --green:#6CBA86; --slate:#8D9AA4; --focus:#6EA2D9;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:17px;line-height:1.5}
+img{max-width:100%}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:3px}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+
+/* Kopf: Tuchfarben als Leitmotiv */
+.cloths{display:grid;grid-template-columns:repeat(4,1fr);height:14px}
+.cloths span:nth-child(1){background:var(--red)}
+.cloths span:nth-child(2){background:var(--yellow)}
+.cloths span:nth-child(3){background:var(--blue)}
+.cloths span:nth-child(4){background:var(--green)}
+header.top{padding:40px 0 26px}
+h1{font-size:clamp(2.3rem,6vw,4rem);line-height:1.02;letter-spacing:-0.025em;margin:0 0 14px;font-weight:700;max-width:16ch}
+.lede{max-width:64ch;color:var(--muted);margin:0 0 20px;font-size:1.06rem}
+.stats{font-weight:700;margin:0 0 22px}
+.legend{display:flex;flex-wrap:wrap;gap:10px 22px;margin:0;padding:0;list-style:none;font-size:.93rem}
+.legend li{display:flex;align-items:center;gap:8px}
+nav.jump{margin-top:22px;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.95rem}
+
+.sw{display:inline-block;width:14px;height:14px;border-radius:3px;flex:none}
+.sw.red{background:var(--red)} .sw.yellow{background:var(--yellow)} .sw.blue{background:var(--blue)} .sw.green{background:var(--green)}
+.sw.slate{background:transparent;border:2px solid var(--slate)}
+
+/* Steuerleiste */
+.controls{position:sticky;top:0;z-index:5;background:var(--bg);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 0}
+.controls .row1,.controls .row2{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.controls .row2{margin-top:10px;gap:10px 16px}
+.chip{font:inherit;font-size:.88rem;border:1px solid var(--line);background:var(--chip);color:var(--ink);padding:5px 11px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+select,input[type="search"]{font:inherit;font-size:.93rem;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+input[type="search"]{min-width:200px;flex:1 1 200px;max-width:340px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{font:inherit;font-size:.9rem;border:0;background:var(--surface);color:var(--ink);padding:6px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.btn{font:inherit;font-size:.9rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:6px;cursor:pointer}
+label.inline{display:inline-flex;align-items:center;gap:6px;font-size:.93rem}
+.count{color:var(--muted);font-size:.9rem;margin-left:auto}
+
+/* Liste */
+main{padding:10px 0 40px}
+.group{margin-top:34px}
+.group h2{display:flex;align-items:center;gap:14px;font-size:1.5rem;letter-spacing:-0.01em;margin:0 0 4px}
+.group .gsub{color:var(--muted);margin:0 0 12px;font-size:.93rem}
+.meter{display:inline-flex;gap:2px;align-items:flex-end;flex:none}
+.meter i{display:block;width:4px;height:12px;background:var(--line);border-radius:1px}
+.meter i.on{background:var(--ink)}
+.group h2 .meter i{width:6px;height:20px}
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+table.tasks{width:100%;border-collapse:collapse}
+table.tasks th{text-align:left;font-size:.82rem;color:var(--muted);font-weight:700;padding:8px 12px;border-bottom:1px solid var(--line)}
+table.tasks td{vertical-align:top;padding:12px;border-bottom:1px solid var(--line)}
+table.tasks tr:last-child td{border-bottom:0}
+td.c-check{width:44px;padding-right:0}
+td.c-check input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--green);cursor:pointer}
+.t-name{font-weight:700;cursor:pointer;display:block}
+ol.steps{margin:6px 0 0;padding-left:1.25em;color:var(--muted);font-size:.9rem;max-width:72ch}
+ol.steps li{margin:1px 0}
+.t-status{margin-top:6px;font-size:.84rem}
+.t-status.done{color:var(--green)}
+.t-status.due{color:var(--red);font-weight:700}
+td.c-area{width:230px;font-size:.9rem}
+td.c-area span.lab{display:inline-flex;gap:8px;align-items:center}
+td.c-freq{width:220px;font-size:.9rem}
+td.c-freq .fq span:last-child{white-space:nowrap}
+td.c-freq .fq{display:flex;gap:8px;align-items:center}
+tr.is-done .t-name{text-decoration:line-through;text-decoration-thickness:1px;color:var(--muted)}
+tr.is-done ol.steps{opacity:.6}
+table.hide-area .c-area,table.hide-freq .c-freq{display:none}
+.empty{padding:30px;border:1px dashed var(--line);border-radius:8px;margin-top:30px;color:var(--muted)}
+
+/* Textabschnitte */
+section.info{padding:36px 0;border-top:1px solid var(--line)}
+section.info h2{font-size:1.7rem;letter-spacing:-0.01em;margin:0 0 14px}
+section.info p,section.info li{max-width:72ch}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px 40px}
+.cols h3{font-size:1.1rem;margin:0 0 6px}
+.cols p{margin:0 0 6px}
+table.week{border-collapse:collapse;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+table.week th,table.week td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.week th{width:130px}
+
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+footer{padding:30px 0 50px;color:var(--muted);font-size:.88rem;border-top:1px solid var(--line)}
+
+@media (max-width:720px){
+  body{font-size:16px}
+  table.tasks thead{display:none}
+  table.tasks,table.tasks tbody{display:block}
+  table.tasks tr{display:grid;grid-template-columns:36px 1fr;border-bottom:1px solid var(--line);padding:10px 12px}
+  table.tasks tr:last-child{border-bottom:0}
+  table.tasks td{border:0;padding:0}
+  td.c-check{grid-row:1 / span 3;width:auto}
+  td.c-area,td.c-freq{width:auto;margin-top:6px;grid-column:2}
+  .count{margin-left:0;width:100%}
+  .controls{position:static}
+  table.week th{width:90px}
+}
+@media print{
+  .controls,nav.jump,.cloths{display:none}
+  body{background:#fff;color:#000;font-size:11pt}
+  .tablewrap{border:0}
+  .group{break-inside:auto}
+  tr{break-inside:avoid}
+  .t-status{display:none}
+}
+</style>
+</head>
+<body>
+<div class="cloths" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+
+<div class="wrap">
+<header class="top">
+  <h1>Haushaltsplan für die Wohnung</h1>
+  <p class="lede">Alle wiederkehrenden Aufgaben eines Haushalts – Reinigung, Wäsche, Einkauf und Ernährung, Müll, Verwaltung, Wartung, Pflanzen – jeweils mit empfohlenem Rhythmus und den einzelnen Arbeitsschritten. Die Intervalle sind Orientierungswerte; Herstellerangaben, Mietvertrag und Hausordnung gehen vor.</p>
+  <p class="stats" id="stats"></p>
+  <ul class="legend" aria-label="Legende der Bereichsfarben">
+    <li><span class="sw red"></span>Rot: Toilette</li>
+    <li><span class="sw yellow"></span>Gelb: Bad und Sanitär ohne WC</li>
+    <li><span class="sw blue"></span>Blau: Möbel, Wohnräume, Oberflächen</li>
+    <li><span class="sw green"></span>Grün: Küche</li>
+    <li><span class="sw slate"></span>Umrandet: Hausarbeit ohne Reinigungstuch</li>
+  </ul>
+  <nav class="jump" aria-label="Seitenabschnitte">
+    <a href="#liste">Aufgabenliste</a>
+    <a href="#woche">Beispiel-Wochenverteilung</a>
+    <a href="#regeln">Arbeitsregeln und Ausstattung</a>
+    <a href="#grenzen">Grenzen des Plans</a>
+  </nav>
+</header>
+</div>
+
+<div class="controls" id="liste">
+  <div class="wrap">
+    <div class="row1" id="cycleChips" role="group" aria-label="Nach Rhythmus filtern"></div>
+    <div class="row2">
+      <label class="inline" for="areaSel">Bereich
+        <select id="areaSel"><option value="">Alle Bereiche</option></select>
+      </label>
+      <input type="search" id="q" placeholder="Aufgabe suchen, z. B. Abfluss" aria-label="Aufgabe suchen">
+      <span class="seg" role="group" aria-label="Gruppierung">
+        <button type="button" data-view="cycle" aria-pressed="true">Nach Rhythmus</button>
+        <button type="button" data-view="area" aria-pressed="false">Nach Bereich</button>
+      </span>
+      <label class="inline"><input type="checkbox" id="onlyOpen"> Nur offene und fällige</label>
+      <button type="button" class="btn" id="resetBtn">Häkchen zurücksetzen</button>
+      <button type="button" class="btn" id="printBtn">Drucken</button>
+      <span class="count" id="count" aria-live="polite"></span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+<main id="out"></main>
+
+<section class="info" id="woche">
+  <h2>Beispiel-Wochenverteilung</h2>
+  <p>Eine mögliche Verteilung für einen Haushalt mit Berufstätigkeit. Tägliche Aufgaben laufen zusätzlich. Die Tage sind austauschbar; entscheidend ist, dass jede Wochenaufgabe einen festen Termin hat.</p>
+  <table class="week">
+    <tr><th>Montag</th><td>Bad und Toilette komplett (wöchentliche Aufgaben), Handtücher wechseln</td></tr>
+    <tr><th>Dienstag</th><td>Wäsche waschen, aufhängen; Papier und Glas wegbringen</td></tr>
+    <tr><th>Mittwoch</th><td>Staubwischen, Kontaktflächen, Flur und Fußmatten</td></tr>
+    <tr><th>Donnerstag</th><td>Küche wöchentlich (Fronten, Mikrowelle, Spülbecken gründlich), Kühlschrank-Check</td></tr>
+    <tr><th>Freitag</th><td>Staubsaugen und Wischen in der ganzen Wohnung</td></tr>
+    <tr><th>Samstag</th><td>Wocheneinkauf, Einkäufe verräumen, Wäsche falten, alle zwei Wochen Bettwäsche</td></tr>
+    <tr><th>Sonntag</th><td>Wochenplanung: Kalender, Essensplan, Einkaufsliste, Post und Rechnungen</td></tr>
+  </table>
+  <div class="cols" style="margin-top:22px">
+    <div><h3>Monatliche Aufgaben</h3><p>Auf vier Wochen verteilen statt an einem Tag zu bündeln: Woche 1 Küche, Woche 2 Bad und Toilette, Woche 3 Wohnräume und Wäschepflege, Woche 4 Verwaltung, Wartung, Pflanzen.</p></div>
+    <div><h3>Vierteljährliche Aufgaben</h3><p>In den ersten Wochen von Januar, April, Juli und Oktober einplanen. Fensterputzen und Entrümpeln lassen sich gut an Wochenenden legen.</p></div>
+    <div><h3>Halbjährliche und jährliche Aufgaben</h3><p>Zwei feste Blöcke: Frühjahr (März/April, Grundreinigung, Balkon, Kleiderwechsel) und Herbst (September/Oktober, Heizung, Balkon einwintern, Kleiderwechsel). Verwaltungsaufgaben mit Fristen gehören in den Kalender, nicht nur in diese Liste.</p></div>
+  </div>
+</section>
+
+<section class="info" id="regeln">
+  <h2>Arbeitsregeln und Ausstattung</h2>
+  <div class="cols">
+    <div>
+      <h3>Reihenfolge beim Reinigen</h3>
+      <p>Von oben nach unten, damit herabfallender Staub zuletzt entfernt wird. Von hinten zur Tür, damit gereinigte Flächen nicht wieder betreten werden. Von sauber nach schmutzig, damit Keime nicht verteilt werden. Erst trocken, dann nass: saugen vor wischen.</p>
+    </div>
+    <div>
+      <h3>Farbsystem der Tücher</h3>
+      <p>Rot für die Toilette, Gelb für Bad und Sanitär, Blau für Möbel und Oberflächen, Grün für die Küche. Das ist eine verbreitete Konvention aus der Gebäudereinigung, keine einheitliche Norm; wichtig ist, dass WC-Tücher nie in der Küche landen.</p>
+    </div>
+    <div>
+      <h3>Sinnerscher Kreis</h3>
+      <p>Reinigungswirkung entsteht aus vier Faktoren: Chemie (Reinigungsmittel), Mechanik (Reiben, Bürsten), Temperatur und Einwirkzeit. Wer einen Faktor verringert, muss andere erhöhen – etwa Badreiniger länger einwirken lassen statt stärker zu scheuern.</p>
+    </div>
+    <div>
+      <h3>Sicherheit</h3>
+      <p>Chlorhaltige und säurehaltige Reiniger nie mischen, dabei kann giftiges Chlorgas entstehen. Säuren (Essig, Zitronensäure, Kalkreiniger) nicht auf Naturstein oder Marmor. Reiniger in Originalgebinden und außer Reichweite von Kindern lagern. Im normalen Haushalt ist Desinfektion in der Regel nicht nötig; gründliches Reinigen genügt.</p>
+    </div>
+    <div>
+      <h3>Grundausstattung Mittel</h3>
+      <p>Spülmittel, Allzweckreiniger, kalklösender Badreiniger, WC-Reiniger, Scheuermilch, Glasreiniger, Bodenreiniger passend zum Belag, Zitronensäure, Natron, Waschmittel (Voll-, Color-, Feinwaschmittel), Spülmaschinensalz und Klarspüler.</p>
+    </div>
+    <div>
+      <h3>Grundausstattung Geräte</h3>
+      <p>Staubsauger mit Fugen- und Polsterdüse, Wischmopp mit Eimer, Mikrofasertücher in vier Farben, Duschabzieher, Handfeger und Kehrschaufel, Spül-, Fugen- und Flaschenbürsten, Glaskeramikschaber, Teleskop-Staubwedel, sicherer Tritt, Hygrometer, Entlüftungsschlüssel.</p>
+    </div>
+  </div>
+</section>
+
+<section class="info" id="grenzen">
+  <h2>Grenzen des Plans</h2>
+  <p>Die Rhythmen sind für einen Zwei-Personen-Haushalt ohne besondere Anforderungen angesetzt. Sie verschieben sich deutlich bei mehr Personen, Kleinkindern, Haustieren, Allergien, starkem Kochverhalten, hellen oder empfindlichen Böden, hartem Wasser oder einer Wohnung an einer verkehrsreichen Straße.</p>
+  <p>Nicht enthalten sind Kinderbetreuung und Pflege von Angehörigen, Gartenarbeit außerhalb eines Balkons, Fahrzeugpflege sowie größere Renovierungen. Wer im Mietverhältnis welche Wartung schuldet (etwa Rauchwarnmelder, Treppenhaus, Winterdienst, Kleinreparaturen), regeln Landesrecht, Mietvertrag und Hausordnung unterschiedlich; das ist im Einzelfall zu prüfen.</p>
+  <p>Die Häkchen speichern nur das Erledigungsdatum in diesem Browser auf diesem Gerät. Nach Ablauf des Rhythmus erscheint eine Aufgabe wieder als fällig. Aufgaben mit dem Rhythmus „Bei Bedarf“ bleiben abgehakt, bis sie manuell zurückgesetzt werden.</p>
+</section>
+
+<footer>Rhythmen als Orientierungswerte. Bei Geräten gelten die Angaben der Hersteller, bei Rechtsfragen die jeweils geltenden Regelungen.</footer>
+</div>
+
+<script>
+const CYCLES = [
+  {k:"N",  name:"Nach jeder Nutzung", days:1,   lvl:10, sub:"Direkt im Anschluss erledigen, dann entsteht kein Aufwand an anderer Stelle."},
+  {k:"T",  name:"Täglich",            days:1,   lvl:9,  sub:"Kurze Routinen, zusammen meist unter einer halben Stunde."},
+  {k:"W2", name:"2–3× pro Woche",     days:3,   lvl:8,  sub:"Aufgaben mit schnellem Verschmutzungs- oder Hygienezyklus."},
+  {k:"W",  name:"Wöchentlich",        days:7,   lvl:7,  sub:"Der Kern der Unterhaltsreinigung."},
+  {k:"2W", name:"Alle 2 Wochen",      days:14,  lvl:6,  sub:"Gründlichere Reinigung ausgewählter Flächen."},
+  {k:"M",  name:"Monatlich",          days:30,  lvl:5,  sub:"Geräte- und Detailpflege; am besten auf vier Wochen verteilen."},
+  {k:"Q",  name:"Vierteljährlich",    days:91,  lvl:4,  sub:"Schränke, Fenster, Inventur, Fristen."},
+  {k:"H",  name:"Halbjährlich",       days:182, lvl:3,  sub:"Saisonwechsel und Wartung."},
+  {k:"J",  name:"Jährlich",           days:365, lvl:2,  sub:"Grundreinigung, Heizung, Verwaltung mit Jahresfristen."},
+  {k:"S",  name:"Saisonal",           days:90,  lvl:1,  sub:"An Jahreszeiten gebunden, jeweils einmal pro Saison."},
+  {k:"B",  name:"Bei Bedarf",         days:null,lvl:0,  sub:"Anlassbezogen, ohne festen Takt."}
+];
+const AREAS = [
+  {k:"kue", name:"Küche", c:"green"},
+  {k:"wc",  name:"Toilette", c:"red"},
+  {k:"bad", name:"Bad", c:"yellow"},
+  {k:"woh", name:"Ganze Wohnung und Wohnräume", c:"blue"},
+  {k:"sch", name:"Schlafzimmer", c:"blue"},
+  {k:"flu", name:"Flur und Eingang", c:"blue"},
+  {k:"arb", name:"Arbeitsplatz und Technik", c:"blue"},
+  {k:"bal", name:"Balkon", c:"slate"},
+  {k:"kel", name:"Keller und Abstellraum", c:"slate"},
+  {k:"wae", name:"Wäsche und Textilien", c:"slate"},
+  {k:"ern", name:"Einkauf und Ernährung", c:"slate"},
+  {k:"mue", name:"Müll und Entsorgung", c:"slate"},
+  {k:"ver", name:"Verwaltung und Organisation", c:"slate"},
+  {k:"war", name:"Wartung und Sicherheit", c:"slate"},
+  {k:"pfl", name:"Pflanzen", c:"slate"},
+  {k:"tie", name:"Haustiere (falls vorhanden)", c:"slate"},
+  {k:"geb", name:"Hausgemeinschaft (falls vereinbart)", c:"slate"}
+];
+
+const RAW = [
+// KÜCHE
+["kue","N","Kochfeld nach dem Kochen abwischen","Abkühlen lassen (Ceran, Induktion)|Grobe Reste mit feuchtem Tuch aufnehmen|Mit Spülwasser nachwischen und trockenreiben|Eingebranntes zeitnah mit Glaskeramikschaber lösen"],
+["kue","N","Arbeitsfläche nach der Zubereitung abwischen","Lebensmittel und Geräte wegräumen|Krümel in die Hand oder den Biomüll wischen|Mit Spülwasser oder Allzweckreiniger feucht wischen|Nach rohem Fleisch oder Fisch heiß reinigen und trocknen"],
+["kue","N","Schneidebrett und Messer spülen","Nach rohem Fleisch oder Geflügel sofort heiß spülen|Holzbretter nicht in die Spülmaschine|Hochkant trocknen lassen"],
+["kue","N","Reste abkühlen und kühlen","Gegarte Reste zügig abkühlen (Richtwert: innerhalb von etwa zwei Stunden in den Kühlschrank)|In verschlossene Dosen füllen und mit Datum beschriften"],
+["kue","T","Geschirr spülen oder Spülmaschine einräumen","Speisereste in den Biomüll schaben, Vorspülen ist meist unnötig|Maschine: Gläser oben, Töpfe unten, Messer mit Klinge nach unten|Von Hand: Gläser, dann Besteck, Teller, zuletzt Töpfe; Wasser rechtzeitig wechseln"],
+["kue","T","Spülmaschine ausräumen","Nach Programmende kurz ausdampfen lassen|Unten zuerst ausräumen, damit Restwasser von oben nicht auf trockenes Geschirr tropft|Tür einen Spalt offen lassen"],
+["kue","T","Esstisch abräumen und abwischen","Geschirr und Lebensmittel abräumen|Feucht abwischen|Tischsets oder Tischdecke ausschütteln"],
+["kue","T","Spülbecken ausspülen und trockenreiben","Siebeinsatz leeren|Becken und Armatur mit Spülwasser auswischen|Trockenreiben gegen Kalkflecken"],
+["kue","T","Spüllappen und Schwamm aufhängen","Gründlich ausspülen und auswringen|Luftig zum Trocknen aufhängen, nicht nass liegen lassen"],
+["kue","T","Küche abends zurücksetzen","Alle Arbeitsflächen frei räumen|Geräte ausschalten|Boden auf Krümel prüfen"],
+["kue","W2","Geschirrtücher wechseln","Alle 2–3 Tage oder sofort bei Verschmutzung|Mit mindestens 60 °C waschen"],
+["kue","W2","Spüllappen wechseln","Alle 2–3 Tage|Waschbare Lappen bei 60 °C waschen, Einweglappen entsorgen"],
+["kue","W2","Küchenboden fegen oder saugen","Stühle abrücken|Von hinten zur Tür arbeiten|Ecken und Sockel mit Fugendüse"],
+["kue","W","Küchenboden feucht wischen","Vorher saugen|Bodenreiniger passend zum Belag und richtig dosiert|Zur Tür hin wischen und trocknen lassen"],
+["kue","W","Gerätefronten abwischen","Kühlschrank, Backofen, Spülmaschine, Mikrowelle von außen|Griffe besonders gründlich|Edelstahl in Schliffrichtung wischen und trockenreiben"],
+["kue","W","Schrank- und Schubladengriffe abwischen","Feuchtes Tuch mit Spülmittel|Anschließend trocknen"],
+["kue","W","Mikrowelle innen reinigen","Schale Wasser, optional mit Zitronensaft, 2–3 Minuten erhitzen|1–2 Minuten geschlossen stehen lassen|Innenraum, Decke und Tür auswischen, Drehteller spülen"],
+["kue","W","Kühlschrank-Check vor dem Einkauf","Abgelaufenes und Verdorbenes aussortieren|Reste verbrauchen oder einfrieren|Älteres nach vorne stellen|Fehlendes auf die Einkaufsliste"],
+["kue","W","Spülbecken gründlich reinigen","Abflusssieb herausnehmen und reinigen|Becken mit Scheuermilch reinigen (Edelstahl mild)|Armatur inklusive Rückseite und Hebel, leichten Kalk mit Zitronensäurelösung, danach klar nachspülen"],
+["kue","W","Spülschwämme ersetzen","Schwämme wöchentlich tauschen; Waschen oder Mikrowelle senkt die Keimzahl nur unzuverlässig"],
+["kue","W","Kaffeemaschine pflegen","Tropfschale und Tresterbehälter leeren und spülen|Wassertank ausspülen und frisch füllen|Milchsystem nach Herstellerangabe reinigen (bei Milchnutzung meist täglich)"],
+["kue","W","Küchenrückwand und Fliesenspiegel abwischen","Fettspritzer mit warmem Spülwasser lösen|Hinter dem Kochfeld besonders gründlich|Trockenwischen"],
+["kue","W","Kleingeräte außen abwischen","Wasserkocher, Toaster, Küchenmaschine|Vorher Stecker ziehen|Nur feucht, nicht nass"],
+["kue","2W","Kochfeld gründlich reinigen","Eingebranntes mit Glaskeramikschaber entfernen|Ceranreiniger auftragen und polieren|Gasherd: Brennerdeckel und Roste abnehmen und spülen"],
+["kue","2W","Dunstabzugshaube außen reinigen","Gerät ausschalten|Fettfilm mit warmem Spülwasser lösen|Edelstahl in Schliffrichtung trockenwischen"],
+["kue","2W","Toaster-Krümelschublade leeren","Stecker ziehen, abkühlen lassen|Krümelschublade herausziehen und leeren"],
+["kue","M","Kühlschrank auswischen","Inhalt in eine Kühltasche umlagern|Fächer und Schubladen herausnehmen und spülen|Innenraum mit Essigwasser oder mildem Reiniger auswischen, Türdichtungen inklusive Falten|Tauwasserrinne und Ablaufloch hinten prüfen|Trocknen lassen und einräumen"],
+["kue","M","Backofen reinigen","Bleche und Roste ausbauen und einweichen|Reinigungsprogramm nach Hersteller oder Natronpaste auftragen und einwirken lassen|Auswischen und mit klarem Wasser nachwischen|Türglas innen reinigen, Dichtung vorsichtig abwischen"],
+["kue","M","Fettfilter der Dunstabzugshaube reinigen","Metallfilter ausbauen|In der Spülmaschine (untere Ebene) oder heiß mit Spülmittel einweichen und bürsten|Trocknen und einsetzen"],
+["kue","M","Spülmaschinensieb reinigen","Siebkombination am Boden herausdrehen|Unter fließendem Wasser mit Bürste reinigen|Sprüharme auf verstopfte Düsen prüfen|Sieb korrekt einrasten lassen"],
+["kue","M","Salz und Klarspüler der Spülmaschine prüfen","Füllstandsanzeigen prüfen und nachfüllen|Wasserhärte in der Maschine korrekt eingestellt?"],
+["kue","M","Wasserkocher entkalken","Zitronensäurelösung oder Entkalker nach Herstellerangabe|Mehrfach mit klarem Wasser aufkochen und ausgießen|Bei hartem Wasser häufiger"],
+["kue","M","Mülleimer innen auswaschen","Beutel entnehmen|Behälter, Deckel und Pedal heiß auswaschen|Vollständig trocknen lassen, dann neuen Beutel einlegen"],
+["kue","M","Vorratsschrank prüfen","Mindesthaltbarkeit prüfen; das MHD ist kein Verbrauchsdatum, sensorisch prüfen|Angebrochenes zusammenführen, Dosen beschriften|Auf Lebensmittelmotten achten (Gespinste, Larven)|Krümel aussaugen"],
+["kue","M","Spülenabfluss vorbeugend pflegen","Heißes Wasser nachgießen|Kein Fett in den Abfluss|Bei Geruch Siphon reinigen"],
+["kue","M","Kaffeemaschine entkalken","Nach Anzeige oder Herstellerintervall|Nur empfohlene Entkalker verwenden|Herausnehmbare Brühgruppe ausspülen"],
+["kue","M","Wasserfilterkartusche wechseln (falls genutzt)","Intervall laut Hersteller, bei Tischfiltern häufig etwa vier Wochen|Kanne reinigen"],
+["kue","Q","Küchenschränke innen auswischen","Schrank für Schrank ausräumen|Innenflächen feucht auswischen und trocknen|Beim Einräumen Doppeltes und Defektes aussortieren"],
+["kue","Q","Schubladen und Besteckeinsatz reinigen","Ausräumen, Krümel aussaugen|Besteckeinsatz spülen|Inhalt neu ordnen"],
+["kue","Q","Oberseiten der Hängeschränke entfetten","Fett-Staub-Schicht mit warmem Spülwasser oder Fettlöser entfernen|Danach Backpapier auflegen, das künftig nur getauscht wird"],
+["kue","Q","Tiefkühler-Inventur","Inhalt sichten und Einfrierdaten prüfen|Bestandsliste aktualisieren|Ältestes nach vorn, Verbrauch einplanen"],
+["kue","Q","Pflegeprogramm der Spülmaschine","Leere Maschine mit Maschinenpfleger im heißesten Programm|Türdichtung und Türunterkante abwischen"],
+["kue","Q","Kleingeräte gründlich reinigen","Mixer, Küchenmaschine, Waffeleisen und Ähnliches|Nach Herstellerangabe zerlegen und reinigen|Nie Genutztes aussortieren"],
+["kue","H","Gefrierschrank abtauen (ohne No-Frost)","Spätestens bei etwa 5 mm Eisschicht|Inhalt in Kühlboxen umlagern, Gerät ausschalten|Tauwasser mit Tüchern auffangen, kein spitzes Werkzeug verwenden|Auswischen, trocknen, einschalten, nach dem Abkühlen einräumen"],
+["kue","H","Aktivkohlefilter der Umlufthaube wechseln","Intervall nach Hersteller, häufig 3–6 Monate|Ersatzfilter rechtzeitig bestellen"],
+["kue","H","Siphon der Spüle reinigen","Eimer unterstellen|Siphon aufschrauben und reinigen|Dichtungen prüfen, festschrauben, Dichtheit testen"],
+["kue","H","Messer schleifen","Schärfe prüfen, abziehen oder schleifen (lassen)|Stumpfe Messer rutschen eher ab"],
+["kue","J","Hinter und unter Küchengeräten reinigen","Freistehende Geräte vorsichtig vorziehen (Kabel, Wasseranschluss beachten)|Boden und Wand dahinter reinigen|Lüftungsgitter und Rückseite des Kühlschranks entstauben"],
+["kue","J","Grundreinigung Küche","Alle Fronten innen und außen|Sockelblenden abnehmen und dahinter saugen|Lampen, Steckdosen und Schalter"],
+// TOILETTE
+["wc","N","Toilette nach Benutzung prüfen","Bei Verschmutzung sofort mit der WC-Bürste reinigen|Bürste zwischen Brille und Becken abtropfen lassen"],
+["wc","W2","WC-Becken innen reinigen","WC-Reiniger unter den Rand geben und einwirken lassen|Mit der Bürste auch unter dem Rand bürsten|Spülen"],
+["wc","W","Toilette komplett reinigen","Eigenes rotes Tuch oder Einwegtuch verwenden|Von sauber nach schmutzig: Spültaste, Spülkasten und Wand, Deckel oben, Deckel unten, Brille oben, Brille unten, Scharniere, Beckenaußenseite, Sockel|Becken innen wie oben reinigen|Tuch danach für keine anderen Flächen verwenden"],
+["wc","W","Boden um die Toilette wischen","Bereich hinter dem WC gesondert|Eigenes Wischtuch oder als Letztes wischen"],
+["wc","W","Toilettenpapier und Hygieneartikel auffüllen","Vorrat prüfen und auf die Einkaufsliste setzen"],
+["wc","W","Hygieneeimer leeren","Beutel wechseln, Eimer bei Bedarf auswaschen"],
+["wc","M","WC-Bürste und Halter reinigen","Halter heiß mit Reiniger ausspülen|Bürste in Reinigerlösung einweichen, ausspülen, trocknen lassen|Bürste etwa alle 3–6 Monate ersetzen"],
+["wc","M","Urinstein und Kalk entfernen","Wasser mit der Bürste aus dem Becken drücken|Säurehaltigen WC-Reiniger oder Zitronensäure lange (z. B. über Nacht) wirken lassen|Nie mit chlorhaltigen Reinigern kombinieren"],
+["wc","Q","Spülkasten und Drückerplatte prüfen","Läuft Wasser nach? Dichtung oder Mechanik prüfen (lassen)|Drückerplatte bei Unterputzkasten abnehmen und dahinter reinigen"],
+["wc","H","WC-Brille abnehmen und Scharniere reinigen","Brille über Schnellverschluss oder Schrauben lösen|Scharnierbereich reinigen|Schrauben nachziehen"],
+// BAD
+["bad","N","Dusche oder Wanne nach dem Duschen abziehen","Wände und Glas mit dem Abzieher trockenziehen|Armatur kurz trockenreiben|Duschvorhang ausgebreitet trocknen lassen"],
+["bad","N","Bad nach dem Duschen lüften","Fenster weit öffnen, Tür zur Wohnung geschlossen halten|Fensterloses Bad: Lüfter nachlaufen lassen"],
+["bad","T","Waschbecken ausspülen","Zahnpasta- und Haarreste entfernen|Kurz mit dem Tuch nachwischen"],
+["bad","T","Handtücher zum Trocknen ausbreiten","Nicht zusammengelegt aufhängen|Handtuchheizkörper nutzen"],
+["bad","W2","Handtücher wechseln","Richtwert: nach 3–4 Nutzungen|Gästehandtuch häufiger|Bei 60 °C waschen, sofern das Etikett es erlaubt"],
+["bad","W2","Waschbecken und Armatur abwischen","Gelbes Tuch mit Badreiniger|Armatur trockenpolieren"],
+["bad","W","Waschbecken gründlich reinigen","Überlauf mit kleiner Bürste reinigen|Stöpsel herausziehen und reinigen|Armaturensockel und Rückseite"],
+["bad","W","Spiegel reinigen","Glasreiniger oder Wasser mit einem Spritzer Spülmittel|Mit Mikrofaser- oder Fenstertuch streifenfrei trocknen"],
+["bad","W","Dusche und Badewanne reinigen","Kalklösenden Badreiniger aufsprühen und einwirken lassen|Wände, Glas, Armatur, Ablagen, Wanne oder Duschtasse abwischen|Klar nachspülen und abziehen|Auf Naturstein keine säurehaltigen Mittel"],
+["bad","W","Ablagen und Utensilien reinigen","Flaschen anheben, Ablage abwischen|Zahnputzbecher und Seifenschale spülen|Leere Flaschen entsorgen"],
+["bad","W","Badematte wechseln","Nach Pflegeetikett waschen, meist 40–60 °C"],
+["bad","W","Badboden saugen und wischen","Haare zuerst trocken aufnehmen|Ecken, hinter der Tür, rund um die Wanne|Feucht wischen"],
+["bad","W","Mülleimer im Bad leeren","Beutel wechseln"],
+["bad","W","Verbrauchsmaterial prüfen","Seife, Duschgel, Zahnpasta, Reinigungsmittel|Fehlendes auf die Einkaufsliste"],
+["bad","M","Abflüsse von Haaren befreien","Abdeckung von Dusche und Waschbecken öffnen|Haare mit Haken oder Abflussspirale entfernen|Heiß nachspülen; aggressive Rohrreiniger möglichst meiden"],
+["bad","M","Duschkopf und Strahlregler entkalken","Abschrauben und in Essig- oder Zitronensäurelösung einlegen|Düsen mit Finger oder Bürste freireiben|Gründlich spülen und montieren"],
+["bad","M","Fliesen und Fugen reinigen","Wandfliesen abwaschen|Fugen mit Fugenbürste und mildem Reiniger|Auf Schimmel achten (dunkle Punkte)"],
+["bad","M","Duschvorhang waschen","Abnehmen und bei 30–40 °C mit einigen Handtüchern waschen|Feucht wieder aufhängen"],
+["bad","M","Heizkörper im Bad abwischen","Im abgekühlten Zustand feucht abwischen|Zwischenräume mit schmaler Bürste"],
+["bad","M","Lüftungsgitter reinigen (fensterloses Bad)","Staub absaugen|Gitter feucht abwischen"],
+["bad","Q","Zahnbürsten und Aufsteckbürsten wechseln","Etwa alle drei Monate oder bei abgespreizten Borsten|Nach Infekten früher"],
+["bad","Q","Badschränke ausräumen und auswischen","Kosmetik auf Haltbarkeit prüfen (Symbol des offenen Tiegels)|Innenflächen auswischen|Aussortieren"],
+["bad","Q","Silikonfugen prüfen","Auf Schimmel, Risse und Ablösungen prüfen|Oberflächlichen Belag reinigen|Tiefen Befall erneuern lassen; in Mietwohnungen Vermieter informieren"],
+["bad","Q","Dichtungen und Laufschienen der Duschabtrennung reinigen","Dichtprofile abwischen und entkalken|Schienen mit Bürste säubern"],
+["bad","H","Siphon des Waschbeckens reinigen","Eimer unterstellen und aufschrauben|Reinigen, Dichtungen prüfen, wieder montieren"],
+["bad","H","Filter des Badlüfters wechseln (falls vorhanden)","Intervall nach Hersteller|Filtermaße notieren"],
+["bad","J","Grundreinigung Bad","Decke und obere Wandbereiche abwischen|Leuchten reinigen (Strom aus)|Tür, Rahmen, Sockel|Unter und hinter der Wanne, soweit zugänglich"],
+// WOHNUNG
+["woh","T","Aufräumrunde","10–15 Minuten, am besten abends|Gegenstände an ihren festen Platz|Ablageflächen frei halten"],
+["woh","T","Stoßlüften","Mehrmals täglich (Richtwert 2–4-mal) die Fenster ganz öffnen|Im Winter kürzer (etwa 5 Minuten), im Sommer länger|Wenn möglich querlüften|Dauerhaft gekippte Fenster im Winter vermeiden"],
+["woh","T","Heizung beim Lüften herunterdrehen","Thermostat vor dem Lüften zurückdrehen und danach wieder einstellen"],
+["woh","W","Staubsaugen in allen Räumen","Boden vorher freiräumen (Kabel, Kleinteile)|Von der hintersten Ecke zur Tür|Ecken und Sockelleisten mit Fugendüse|Teppiche in zwei Richtungen"],
+["woh","W","Böden feucht wischen","Parkett und Laminat nur nebelfeucht, Fliesen und Vinyl feucht|Bodenreiniger passend zum Belag und richtig dosiert|Zur Tür hin arbeiten und trocknen lassen"],
+["woh","W","Staubwischen in Greifhöhe","Von oben nach unten|Regale, Sideboards, Tische, Fensterbänke|Leicht feuchtes blaues Mikrofasertuch|Gegenstände anheben, nicht umwischen"],
+["woh","W","Kontaktflächen abwischen","Türklinken, Lichtschalter, Fernbedienungen|Feuchtes Tuch mit mildem Reiniger|Elektronik nur nebelfeucht"],
+["woh","W","Papierkörbe leeren","Inhalt in die passende Tonne"],
+["woh","W","Sofa und Kissen richten","Kissen aufschütteln|Krümel aus Ritzen entfernen|Decken zusammenlegen oder in die Wäsche"],
+["woh","2W","Polstermöbel absaugen","Polsterdüse für Flächen, Fugendüse für Ritzen|Sitzkissen abnehmen und darunter saugen"],
+["woh","2W","Glasflächen in Wohnräumen reinigen","Glastisch, Vitrinen, Spiegel, Bilderglas|Streifenfrei trocknen"],
+["woh","2W","Deko und Bilderrahmen entstauben","Trocken oder nebelfeucht|Empfindliches mit weichem Pinsel"],
+["woh","M","Sockelleisten abwischen","Staub absaugen|Feucht abwischen"],
+["woh","M","Türen und Türrahmen abwischen","Griffbereiche und Kanten|Oberkante des Rahmens"],
+["woh","M","Heizkörper entstauben","Tuch unter den Heizkörper legen|Staub zwischen den Lamellen mit Heizkörperbürste lösen und aussaugen|Außenflächen feucht abwischen"],
+["woh","M","Lampen und Lampenschirme entstauben","Strom aus, Leuchtmittel abkühlen lassen|Stoffschirme mit Polsterdüse absaugen|Glas feucht reinigen"],
+["woh","M","Schrankoberseiten und hohe Regale entstauben","Tritt oder Leiter sicher aufstellen|Staub feucht aufnehmen"],
+["woh","M","Unter Möbeln saugen","Unter Sofa, Sessel und Kommoden|Flache Düse verwenden oder Möbel zu zweit anheben"],
+["woh","M","Spinnweben entfernen","Deckenecken, hinter Schränken, an Lampen|Teleskopwedel oder Sauger mit Verlängerung"],
+["woh","M","Fensterbänke innen feucht reinigen","Pflanzen und Deko anheben|Kalk- und Wasserflecken entfernen"],
+["woh","M","Reinigungsgeräte pflegen","Staubsauger: Beutel oder Behälter leeren, Filter reinigen, Haare von der Bürstenwalze schneiden|Wischbezüge und Mikrofasertücher waschen, ohne Weichspüler|Eimer auswaschen"],
+["woh","M","Teppiche gründlich saugen","Wenn möglich beide Seiten|Fransen quer absaugen"],
+["woh","Q","Fenster putzen","Innen und außen, inklusive Rahmen|Nicht in praller Sonne (Streifen)|Reihenfolge: Rahmen, Glas, Fensterbank|Abzieher und Mikrofaser- oder Ledertuch"],
+["woh","Q","Fensterfalze und Dichtungen reinigen","Schmutz aus dem Falz saugen|Dichtungen feucht abwischen, bei Bedarf Pflegestift|Entwässerungsschlitze freimachen"],
+["woh","Q","Jalousien, Rollos und Rollläden reinigen","Lamellen einzeln oder mit Lamellenbürste abwischen|Rollläden außen abwaschen, sofern zugänglich"],
+["woh","Q","Möbel abrücken und dahinter reinigen","Zu zweit anheben statt schieben|Dahinter saugen|Wand auf Feuchte und Schimmel prüfen"],
+["woh","Q","Steckdosen, Schalter und Lüftungsgitter abwischen","Nur nebelfeucht, keine Flüssigkeit an Kontakte"],
+["woh","Q","Entrümpeln: eine Kategorie","Pro Quartal eine Kategorie (Bücher, Kabel, Deko, Küchenutensilien)|Behalten, spenden, verkaufen oder entsorgen|Aussortiertes zeitnah aus der Wohnung bringen"],
+["woh","H","Gardinen und Vorhänge waschen","Abhängen und Pflegeetikett beachten|Feucht aufhängen spart Bügeln|Gardinenstange abwischen"],
+["woh","H","Teppiche grundreinigen","Kleine Teppiche draußen ausklopfen|Große shampoonieren oder reinigen lassen|Flecken vorbehandeln"],
+["woh","H","Wände auf Feuchte und Schimmel prüfen","Außenwände, Raumecken, hinter Schränken, Fensterlaibungen|Hygrometerwerte berücksichtigen|Befall dokumentieren und in Mietwohnungen dem Vermieter melden"],
+["woh","H","Schränke und Kommoden innen auswischen","Ausräumen, auswischen, trocknen|Beim Einräumen ordnen"],
+["woh","J","Frühjahrs-Grundreinigung","Raum für Raum: Decke, Wände, Leuchten, Möbel innen und außen, Heizkörper, Böden|Immer von oben nach unten und von hinten nach vorn"],
+["woh","J","Holzböden pflegen","Pflegemittel passend zur Oberfläche (lackiert, geölt, gewachst) nach Herstellerangabe|Filzgleiter unter Möbeln erneuern"],
+["woh","J","Polstermöbel tiefenreinigen","Waschbare Bezüge abziehen, sonst Waschsauger oder Fachreinigung|Mittel vorher an unauffälliger Stelle testen"],
+["woh","J","Inventar durchsehen","Was wird nicht genutzt?|Defektes reparieren oder entsorgen"],
+["woh","S","Fliegengitter anbringen und abnehmen","Im Frühjahr montieren|Im Herbst reinigen und einlagern"],
+["woh","S","Winter: Lüften und Heizen anpassen","Räume nicht stark auskühlen lassen|Möbel mit einigen Zentimetern Abstand zur Außenwand|Kondenswasser an Scheiben morgens abwischen"],
+["woh","S","Sommer: Hitzeschutz","Früh morgens und nachts lüften, tagsüber verschatten|Biomüll und Obst häufiger kontrollieren (Fruchtfliegen)"],
+// SCHLAFZIMMER
+["sch","T","Bett auslüften","Morgens Decke zurückschlagen und Fenster öffnen|Bett erst danach machen"],
+["sch","T","Kleidung verräumen","Getragenes in den Schrank, an einen Lüftungsplatz oder in den Wäschekorb|Keinen Kleiderstapel entstehen lassen"],
+["sch","W","Nachttische abräumen und abwischen","Gläser und Tassen in die Küche|Staub wischen"],
+["sch","2W","Bettwäsche wechseln","Richtwert alle 1–2 Wochen; bei Hitze, Krankheit oder starkem Schwitzen wöchentlich|Bezüge und Laken abziehen, Matratze kurz auslüften lassen|Bei 60 °C waschen, sofern das Material es erlaubt"],
+["sch","M","Unter dem Bett saugen","Aufbewahrungsboxen hervorziehen|Saugen und bei Bedarf feucht wischen"],
+["sch","Q","Matratze drehen oder wenden","Nach Herstellerangabe wenden (oben/unten) oder drehen (Kopf/Fuß)|Beugt einseitigen Liegekuhlen vor"],
+["sch","Q","Matratze absaugen","Polsterdüse, langsam arbeiten|Nähte und Kanten besonders"],
+["sch","Q","Matratzenschoner oder Encasing waschen","Nach Pflegeetikett|Vollständig trocknen lassen"],
+["sch","H","Kopfkissen und Bettdecken waschen","Material beachten (Daunen, Synthetik, Naturhaar)|Große Trommel oder Waschsalon, mit Trocknerbällen trocknen|Bei Allergien Hersteller- oder ärztliche Empfehlung beachten"],
+["sch","H","Kleiderschrank: Saisonwechsel","Saisonkleidung gewaschen einlagern|Nicht Getragenes aussortieren|Mottenschutz erneuern"],
+["sch","H","Kleiderschrank innen auswischen","Ausräumen, auswischen, trocknen|Auf Mottenfraß prüfen"],
+["sch","J","Zustand von Matratze, Kissen und Decken prüfen","Durchgelegen, verfärbt, riechend?|Nutzungsdauer laut Hersteller beachten (Matratzen häufig um 8–10 Jahre, Kissen deutlich kürzer)"],
+// FLUR
+["flu","T","Schuhe, Jacken und Taschen verräumen","Feste Plätze nutzen|Nasse Schuhe auf eine Abtropfschale"],
+["flu","T","Schlüssel und Geldbörse an den festen Platz","Schale oder Haken im Eingang"],
+["flu","W","Fußmatten ausschütteln und saugen","Innen- und Außenmatte|Bei Regenwetter häufiger"],
+["flu","W","Flurboden saugen und wischen","Bei nassem Wetter 2–3-mal pro Woche"],
+["flu","M","Schuhe pflegen","Reinigen, eincremen oder imprägnieren je nach Material|Absätze und Sohlen prüfen, reparieren lassen"],
+["flu","M","Schuhschrank und Garderobe auswischen","Sand und Schmutz entfernen|Nicht Getragenes aussortieren"],
+["flu","M","Wohnungstür reinigen","Innen und außen, Klinke, Türspion, Klingelschild|Briefkasten auswischen"],
+["flu","H","Garderobe saisonal wechseln","Winter- und Sommerjacken, Mützen, Handschuhe tauschen|Vor dem Einlagern waschen oder reinigen"],
+// ARBEITSPLATZ
+["arb","T","Schreibtisch abräumen","Geschirr in die Küche|Papiere auf den Eingangsstapel"],
+["arb","W","Schreibtisch abwischen","Staub und Flecken|Unter Monitorfuß und Tastatur"],
+["arb","M","Tastatur, Maus und Headset reinigen","Gerät trennen oder ausschalten|Tastatur umdrehen, ausklopfen, mit Pinsel reinigen|Tasten mit leicht feuchtem Tuch nach Herstellerangabe"],
+["arb","M","Bildschirme reinigen","Ausschalten|Trockenes oder minimal feuchtes Mikrofasertuch, kein Glasreiniger auf entspiegelten Flächen"],
+["arb","M","Smartphone und Tablet reinigen","Hülle abnehmen und reinigen|Display nach Herstellerangabe"],
+["arb","M","Kabel und Geräterückseiten entstauben","Lüftungsschlitze absaugen|Mehrfachsteckdosen auf Verfärbung oder Wackelkontakt prüfen"],
+["arb","Q","Drucker prüfen","Tinte oder Toner und Papier|Tintenstrahler gelegentlich nutzen, damit Düsen nicht eintrocknen"],
+["arb","H","Router und Technik entstauben","Lüftungsschlitze reinigen|Bei Bedarf neu starten"],
+// BALKON
+["bal","W","Balkon fegen","Laub, Blüten, Staub|In der Saison häufiger"],
+["bal","M","Balkonablauf freihalten","Laub und Schmutz entfernen, sonst Rückstau und Wasserschaden"],
+["bal","M","Balkonmöbel abwischen","Vogelkot, Pollen und Staub entfernen|Polster trocken lagern"],
+["bal","S","Balkon im Frühjahr herrichten","Boden, Geländer und Möbel gründlich reinigen|Pflanzgefäße vorbereiten, Erde erneuern|Markise oder Sonnenschirm prüfen"],
+["bal","S","Balkon im Herbst einwintern","Möbel reinigen und abdecken oder einlagern|Polster ins Trockene|Kübelpflanzen schützen oder hereinholen|Außenwasserhahn, falls vorhanden, absperren und entleeren"],
+// KELLER
+["kel","Q","Keller und Abstellraum aufräumen","Regale ordnen, Boden fegen|Auf Feuchte, Schimmel und Schädlinge prüfen"],
+["kel","H","Notvorrat prüfen","Haltbarkeit prüfen, Ablaufendes verbrauchen und ersetzen|Wasser, Lebensmittel, Batterien, Taschenlampe, Radio, Medikamente|Orientierung bietet der Ratgeber des Bundesamts für Bevölkerungsschutz (BBK)"],
+["kel","H","Getränke- und Leergutvorrat prüfen","Pfand zurückbringen|Bestand auffüllen"],
+["kel","J","Keller entrümpeln","Unbenutztes aussortieren|Sperrmüll oder Wertstoffhof"],
+// WÄSCHE
+["wae","N","Waschmaschinentür und Einspülkasten offen lassen","Nach jedem Waschgang|Türdichtung trockenwischen, Restwasser und Fremdkörper entfernen"],
+["wae","N","Flusensieb des Trockners reinigen","Nach jedem Trocknergang (Brandschutz, Effizienz)|Kondenstrockner: Wasserbehälter leeren, sofern kein Ablauf angeschlossen ist"],
+["wae","N","Flecken sofort behandeln","Tupfen statt reiben|Eiweiß- und Blutflecken kalt behandeln|Vor dem Waschen passend vorbehandeln"],
+["wae","T","Schmutzwäsche einsammeln","Getragenes in den Wäschekorb, Feuchtes erst trocknen lassen|Möglichst gleich vorsortieren (Weiß, Bunt, Dunkel, Fein, 60 °C)"],
+["wae","W2","Wäsche waschen","Nach Farbe, Temperatur, Material und Verschmutzung sortieren|Taschen leeren, Reißverschlüsse schließen, Empfindliches ins Wäschenetz, Dunkles auf links|Pflegeetiketten beachten|Waschmittel nach Wasserhärte und Verschmutzung dosieren|Trommel nicht überladen (eine Handbreit Platz lassen)"],
+["wae","W2","Wäsche aufhängen oder trocknen","Direkt nach Programmende entnehmen|Ausschütteln und glatt aufhängen (spart Bügeln)|Beim Trocknen in der Wohnung gut lüften, nicht im Schlafzimmer"],
+["wae","W2","Wäsche abnehmen, falten und verräumen","Sofort falten und nach Person oder Raum sortieren|Socken paaren|Beschädigtes in den Flickkorb"],
+["wae","W","Haushaltstextilien waschen","Handtücher, Geschirrtücher, Putz- und Mikrofasertücher|60 °C, Mikrofaser ohne Weichspüler"],
+["wae","W","Bügeln","Nach Bedarf: Hemden, Blusen, Tischwäsche|Nach Temperaturstufe sortieren, von kühl nach heiß|Direkt auf Bügel hängen"],
+["wae","M","Einspülkasten der Waschmaschine reinigen","Herausziehen und Rückstände abspülen|Schacht dahinter mit einer Bürste reinigen"],
+["wae","M","Hygienewaschgang","Maschine bei 60 °C oder höher mit pulverförmigem Vollwaschmittel laufen lassen|Beugt Biofilm und Geruch vor, besonders bei vielen Wäschen mit niedriger Temperatur"],
+["wae","M","Türmanschette der Waschmaschine reinigen","Falten aufziehen, Fremdkörper und Beläge entfernen|Mit mildem Reiniger auswischen und trocknen"],
+["wae","M","Trockner-Wärmetauscher oder Filter reinigen","Nach Herstellerangabe (Kondensator, Wärmepumpenfilter)|Unter fließendem Wasser oder mit Staubsauger"],
+["wae","M","Flickkorb abarbeiten","Knöpfe annähen, Säume, kleine Löcher|Aufwendiges zur Änderungsschneiderei"],
+["wae","Q","Flusensieb der Waschmaschine reinigen","Stecker ziehen, Tuch und flache Schale unterstellen|Notentleerung öffnen und Restwasser ablassen|Sieb herausdrehen, reinigen, fest einsetzen, Dichtheit prüfen"],
+["wae","Q","Wäschekörbe und Wäscheständer reinigen","Abwischen oder abwaschen|Auf Beschädigungen prüfen"],
+["wae","H","Saisonkleidung pflegen und einlagern","Vor dem Einlagern waschen oder reinigen lassen|Luftdurchlässig verpacken, Mottenschutz|Outdoorjacken nachimprägnieren"],
+["wae","H","Zulaufschlauch der Waschmaschine prüfen","Auf Risse, Knicke und Feuchtigkeit prüfen|Aquastop vorhanden?"],
+["wae","B","Handwäsche und Spezialtextilien","Wolle, Seide, Funktionskleidung nach Etikett|Passendes Spezialwaschmittel"],
+["wae","B","Textilien zur Reinigung bringen","Anzüge, Mäntel, Daunen; Pflegesymbole beachten|Abholung einplanen"],
+// ERNÄHRUNG
+["ern","T","Mahlzeiten zubereiten","Nach Wochenplan|Während des Kochens nebenbei aufräumen"],
+["ern","T","Mitnahme-Verpflegung vorbereiten (falls benötigt)","Am Vorabend vorbereiten und kühlen|Dosen am Abend spülen"],
+["ern","W","Essensplan für die Woche erstellen","Termine der Woche berücksichtigen (lange Tage, schnelle Gerichte)|Reste und Vorräte zuerst einplanen|Gerichte einplanen, die für zwei Mahlzeiten reichen"],
+["ern","W","Einkaufsliste erstellen","Aus Essensplan, Kühlschrank-Check und Vorratsliste|Nach Ladenbereichen sortieren|Drogerie- und Haushaltsbedarf ergänzen"],
+["ern","W","Wocheneinkauf","Liste, Taschen und bei Bedarf Kühltasche mitnehmen|Kühlware zuletzt in den Wagen"],
+["ern","W","Einkäufe verräumen","Kühlware zuerst|Neues nach hinten, Älteres nach vorn|Großpackungen umfüllen und beschriften"],
+["ern","W2","Frischwaren nachkaufen","Brot, Obst, Gemüse, Milchprodukte|Nur nach Bedarf, um Verschwendung zu vermeiden"],
+["ern","W","Vorkochen (optional)","Beilagen, Saucen und geschnittenes Gemüse vorbereiten|Beschriften, im Kühlschrank nur wenige Tage lagern"],
+["ern","M","Haushalts- und Drogerievorrat auffüllen","Putz-, Spül- und Waschmittel, Müllbeutel, Toilettenpapier, Batterien|Mindestbestand festlegen, etwa immer eine Packung Reserve"],
+["ern","M","Getränkevorrat auffüllen","Bestand prüfen|Leergut mitnehmen"],
+["ern","Q","Rezeptsammlung und Standard-Einkaufsliste pflegen","Bewährte Gerichte ergänzen|Standardliste an veränderte Gewohnheiten anpassen"],
+// MÜLL
+["mue","T","Biomüll leeren (Sommer)","Im Sommer täglich, sonst alle 2–3 Tage|Mit Zeitungspapier auslegen; Plastikbeutel sind kommunal meist nicht erlaubt"],
+["mue","W2","Restmüll und Verpackungen leeren","Nach Füllstand|Verpackungen restentleert in den Gelben Sack oder die Gelbe Tonne, Ausspülen ist nicht nötig"],
+["mue","W","Altpapier und Altglas wegbringen","Kartons zerkleinern|Glas nach Farben trennen, Einwurfzeiten beachten"],
+["mue","W","Abfuhrtermine prüfen","Abfallkalender oder App der Kommune|Tonnen herausstellen, falls Hausordnung oder Mietvertrag das vorsehen"],
+["mue","M","Pfandflaschen zurückbringen","Beim Einkauf mitnehmen"],
+["mue","Q","Problemstoffe entsorgen","Batterien, Akkus, Leuchtmittel: Sammelstellen im Handel|Elektrokleingeräte: Handel oder Wertstoffhof|Farben, Lacke, Chemikalien: Schadstoffsammlung|Altmedikamente: Hinweise der Kommune beachten"],
+["mue","Q","Altkleider und Spenden abgeben","Tragbares an Kleiderkammer, Sozialkaufhaus oder Container seriöser Träger|Kaputtes nach kommunaler Regel entsorgen"],
+["mue","B","Sperrmüll anmelden","Online oder telefonisch bei der Kommune|Termin und Stellplatz beachten"],
+// VERWALTUNG
+["ver","T","Post holen und sortieren","Sofort in drei Stapel: erledigen, ablegen, Altpapier|Werbung direkt entsorgen"],
+["ver","W","Wochenplanung","Gemeinsamen Kalender abgleichen|Termine, Fristen und Geburtstage der nächsten zwei Wochen|Haushaltsaufgaben der Woche verteilen"],
+["ver","W","Rechnungen und Zahlungen prüfen","Offene Rechnungen bezahlen oder terminieren|Kontobewegungen auf Auffälligkeiten prüfen"],
+["ver","W","Erledigen-Stapel abarbeiten","Formulare, Rückmeldungen, Anträge, Kündigungen|Was länger dauert, als Termin einplanen"],
+["ver","M","Ausgaben erfassen und mit dem Budget abgleichen","Ausgaben kategorisieren|Soll und Ist vergleichen|Abweichungen notieren"],
+["ver","M","Ablage machen","Ablagestapel in Ordner oder digital ablegen|Unwichtiges scannen und vernichten"],
+["ver","M","Abos und Daueraufträge prüfen","Wird alles genutzt?|Kündigungsfristen notieren"],
+["ver","M","Datensicherung prüfen","Backup von Rechner und Smartphone|Stichprobe: Lässt sich eine Datei wiederherstellen?"],
+["ver","M","Software-Updates durchführen","Betriebssysteme, Router, Apps|Ungenutzte Apps entfernen"],
+["ver","M","Zählerstände notieren","Strom, Gas, Wasser, sofern zugänglich|Mit Datum dokumentieren und Verbrauch beobachten"],
+["ver","Q","Verträge und Fristen prüfen","Strom, Gas, Internet, Mobilfunk, Versicherungen|Bei Preiserhöhungen Sonderkündigungsrecht prüfen|Ablaufende Mindestlaufzeiten"],
+["ver","Q","Geburtstage und Anlässe vorbereiten","Die kommenden drei Monate durchgehen|Geschenke und Karten rechtzeitig besorgen"],
+["ver","Q","Digitale Ordnung","Downloads, Fotos und Postfach aufräumen|Passwortmanager auf schwache oder doppelte Passwörter prüfen"],
+["ver","H","Versicherungen prüfen","Haftpflicht, Hausrat (Versicherungssumme noch passend?) und weitere|Unterlagen aktualisieren"],
+["ver","H","Hausapotheke prüfen","Verfallsdaten prüfen, Abgelaufenes nach kommunaler Regel entsorgen|Verbandsmaterial, Pflaster und Fieberthermometer ergänzen"],
+["ver","J","Steuererklärung vorbereiten","Belege laufend sammeln (Ordner oder Scan)|Abgabefristen beachten, sie unterscheiden sich mit und ohne Steuerberatung"],
+["ver","J","Nebenkostenabrechnung prüfen","Plausibilität, Umlageschlüssel, Vergleich mit dem Vorjahr|Einwendungsfrist für Mieter in der Regel zwölf Monate nach Zugang (§ 556 Abs. 3 BGB)|Bei Unklarheiten Belegeinsicht verlangen"],
+["ver","J","Ausweisdokumente prüfen","Personalausweis, Reisepass, Führerschein: Ablaufdaten|Termin beim Bürgeramt frühzeitig vereinbaren"],
+["ver","J","Freistellungsaufträge und Daueraufträge prüfen","Verteilung auf die Banken passend?|Daueraufträge (Miete, Sparpläne) aktuell?"],
+["ver","J","Ablage ausmisten","Aufbewahrungsfristen beachten (z. B. Handwerkerrechnungen für Leistungen an der Wohnung: für Privatpersonen zwei Jahre)|Steuerrelevante Unterlagen entsprechend länger aufbewahren|Datenschutzgerecht vernichten"],
+["ver","J","Jahresrückblick Haushalt","Was hat funktioniert, was nicht?|Plan und Aufgabenverteilung anpassen"],
+// WARTUNG
+["war","W","Luftfeuchtigkeit prüfen","Hygrometer ablesen|Orientierung: etwa 40–60 % relative Luftfeuchte|Bei dauerhaft höheren Werten Lüften und Heizen anpassen"],
+["war","M","Rauchwarnmelder testen","Prüftaste drücken und Signal abwarten|Bei Ausfall Batterie oder Gerät tauschen|Zuständigkeit für die Wartung ergibt sich aus Landesrecht und Mietvertrag"],
+["war","M","Leuchtmittel prüfen","Defekte ersetzen|Vorrat für gängige Fassungen|Alte Leuchtmittel korrekt entsorgen"],
+["war","Q","Wasserhähne und Spülungen auf Undichtigkeit prüfen","Tropfende Hähne oder nachlaufende Spülungen reparieren oder melden|Unter Spüle und Waschbecken auf Feuchte prüfen"],
+["war","H","FI-Schutzschalter testen","Prüftaste im Sicherungskasten drücken, der Schalter muss auslösen|Wieder einschalten, Uhren und Geräte prüfen"],
+["war","H","Thermostatventile bewegen","Im Sommer gelegentlich ganz auf- und zudrehen, damit die Ventile nicht festsitzen"],
+["war","H","Verbandkasten und Feuerlöscher prüfen","Haltbarkeit und Vollständigkeit|Feuerlöscher: Prüftermin laut Plakette (häufig alle zwei Jahre)"],
+["war","J","Heizkörper entlüften","Zu Beginn der Heizperiode oder bei Gluckern und kalten Stellen|Heizkörper aufdrehen, dann Thermostat zu und kurz warten|Entlüftungsschlüssel, Tuch und Gefäß bereithalten|Ventil öffnen, bis Wasser austritt, dann schließen|Bei Etagenheizung Anlagendruck prüfen, sonst Vermieter informieren"],
+["war","J","Rauchwarnmelder warten (lassen)","Sichtprüfung, Funktionstest, Raucheintrittsöffnungen frei|Gerätetausch nach Herstellerangabe, häufig nach zehn Jahren"],
+["war","J","Fenster- und Türbeschläge pflegen","Beschläge mit Pflegeöl oder Sprühfett schmieren|Prüfen, ob Fenster dicht schließen"],
+["war","J","Absperrventile kennen und prüfen","Hauptwasserhahn und Eckventile finden und beschriften|Leichtgängigkeit vorsichtig prüfen, bei Unsicherheit Fachbetrieb"],
+["war","J","Sicherungskasten beschriften","Zuordnung Sicherung zu Raum ermitteln|Liste in den Kasten legen"],
+["war","J","Werkzeug und Notfallausstattung prüfen","Taschenlampe, Batterien, Werkzeugset|Wichtige Nummern (Hausverwaltung, Notdienste) aktuell?"],
+["war","B","Kleinreparaturen","Lockere Griffe und Schrauben nachziehen, Silikon ausbessern|In Mietwohnungen Kleinreparaturklausel prüfen und Schäden zeitnah melden"],
+// PFLANZEN
+["pfl","T","Balkonpflanzen gießen (Sommer)","Morgens oder abends|Bei Hitze gegebenenfalls zweimal"],
+["pfl","W","Zimmerpflanzen gießen","Bedarf per Fingerprobe prüfen (obere Erdschicht trocken?)|Zimmerwarmes Wasser|Überschüssiges Wasser nach etwa 15 Minuten aus dem Untersetzer entfernen"],
+["pfl","2W","Pflanzen auf Schädlinge prüfen","Blattunterseiten und Triebspitzen ansehen|Trauermücken, Spinnmilben, Schildläuse|Befallene Pflanzen isolieren"],
+["pfl","M","Blätter abstauben","Große Blätter feucht abwischen|Kleine Blätter abduschen"],
+["pfl","M","Düngen in der Wachstumsphase","Etwa März bis September nach Herstellerangabe|Im Winter meist nicht düngen"],
+["pfl","M","Verwelktes entfernen","Gelbe Blätter und Verblühtes abschneiden|Pflanzen drehen für gleichmäßigen Wuchs"],
+["pfl","J","Umtopfen","Im Frühjahr, wenn Wurzeln aus dem Topf wachsen|Topf wenige Zentimeter größer, frische Erde"],
+["pfl","S","Standorte saisonal anpassen","Winter: heller stellen, Heizungsluft meiden|Sommer: vor praller Mittagssonne schützen"],
+// HAUSTIERE
+["tie","T","Füttern und Wasser wechseln","Frisches Wasser täglich|Näpfe spülen, bei Nassfutter nach jeder Mahlzeit"],
+["tie","T","Katzentoilette säubern","Klumpen und Kot 1–2-mal täglich entfernen|Danach Hände waschen"],
+["tie","W","Streu komplett wechseln und Toilette auswaschen","Heißes Wasser und milder, wenig parfümierter Reiniger"],
+["tie","W","Liegeplätze absaugen","Tierhaare von Decken, Sofa und Kratzbaum entfernen"],
+["tie","M","Tierdecken und Körbchen waschen","Nach Etikett, gegebenenfalls mit Haarfilterbeutel"],
+["tie","M","Parasitenprophylaxe","Nach tierärztlicher Empfehlung"],
+["tie","J","Tierärztliche Kontrolle und Impfungen","Termin nach Impfplan vereinbaren"],
+// HAUSGEMEINSCHAFT
+["geb","B","Treppenhausreinigung laut Hausordnung","Turnus aus Hausordnung oder Mietvertrag übernehmen|Kehren, wischen, Geländer abwischen"],
+["geb","S","Winterdienst (falls übertragen)","Nur relevant, wenn im Mietvertrag wirksam vereinbart|Räum- und Streuzeiten der kommunalen Satzung beachten"]
+];
+
+const CYC = Object.fromEntries(CYCLES.map(c=>[c.k,c]));
+const AR  = Object.fromEntries(AREAS.map(a=>[a.k,a]));
+const TASKS = RAW.map((r,i)=>({id:r[0]+"|"+r[2], a:r[0], c:r[1], n:r[2], s:r[3].split("|"), i}));
+
+const KEY = "haushaltsplan-erledigt-v1";
+let store = {};
+try { store = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch(e) { store = {}; }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(store)); } catch(e) {} }
+
+const state = { cycles:new Set(), area:"", q:"", view:"cycle", onlyOpen:false };
+
+function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function dayNum(s){ const p=s.split("-").map(Number); return Math.round(Date.UTC(p[0],p[1]-1,p[2])/864e5); }
+function fmt(s){ const p=s.split("-"); return p[2]+"."+p[1]+"."+p[0].slice(2); }
+function esc(s){ return s.replace(/[&<>"]/g, ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch])); }
+
+function status(t){
+  const d = store[t.id];
+  if(!d) return {st:"open"};
+  const c = CYC[t.c];
+  if(c.days==null) return {st:"done", date:d};
+  const due = dayNum(d) + c.days, now = dayNum(todayStr());
+  if(now >= due) return {st:"due", date:d, over:now-due};
+  return {st:"done", date:d, left:due-now};
+}
+function meter(lvl){ let h=""; for(let k=1;k<=10;k++) h+='<i class="'+(k<=lvl?"on":"")+'"></i>'; return '<span class="meter" aria-hidden="true">'+h+'</span>'; }
+
+// Steuerung aufbauen
+const chipsEl = document.getElementById("cycleChips");
+const allChip = document.createElement("button");
+allChip.type="button"; allChip.className="chip"; allChip.textContent="Alle Rhythmen"; allChip.setAttribute("aria-pressed","true");
+allChip.addEventListener("click",()=>{ state.cycles.clear(); syncChips(); render(); });
+chipsEl.appendChild(allChip);
+CYCLES.forEach(c=>{
+  const b=document.createElement("button");
+  b.type="button"; b.className="chip"; b.dataset.k=c.k; b.textContent=c.name; b.setAttribute("aria-pressed","false");
+  b.addEventListener("click",()=>{ state.cycles.has(c.k)?state.cycles.delete(c.k):state.cycles.add(c.k); syncChips(); render(); });
+  chipsEl.appendChild(b);
+});
+function syncChips(){
+  allChip.setAttribute("aria-pressed", state.cycles.size===0 ? "true":"false");
+  chipsEl.querySelectorAll("button[data-k]").forEach(b=>b.setAttribute("aria-pressed", state.cycles.has(b.dataset.k)?"true":"false"));
+}
+const areaSel = document.getElementById("areaSel");
+AREAS.forEach(a=>{ const o=document.createElement("option"); o.value=a.k; o.textContent=a.name; areaSel.appendChild(o); });
+areaSel.addEventListener("change",()=>{ state.area=areaSel.value; render(); });
+document.getElementById("q").addEventListener("input",e=>{ state.q=e.target.value.trim().toLowerCase(); render(); });
+document.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>{
+  state.view=b.dataset.view;
+  document.querySelectorAll(".seg button").forEach(x=>x.setAttribute("aria-pressed", x===b?"true":"false"));
+  render();
+}));
+document.getElementById("onlyOpen").addEventListener("change",e=>{ state.onlyOpen=e.target.checked; render(); });
+document.getElementById("resetBtn").addEventListener("click",()=>{
+  if(confirm("Alle gespeicherten Häkchen auf diesem Gerät löschen?")){ store={}; save(); render(); }
+});
+document.getElementById("printBtn").addEventListener("click",()=>window.print());
+
+document.getElementById("stats").textContent = TASKS.length+" Aufgaben in "+AREAS.length+" Bereichen und "+CYCLES.length+" Rhythmen";
+
+function filtered(){
+  return TASKS.filter(t=>{
+    if(state.cycles.size && !state.cycles.has(t.c)) return false;
+    if(state.area && t.a!==state.area) return false;
+    if(state.q){
+      const hay=(t.n+" "+t.s.join(" ")+" "+AR[t.a].name).toLowerCase();
+      if(!hay.includes(state.q)) return false;
+    }
+    if(state.onlyOpen && status(t).st==="done") return false;
+    return true;
+  });
+}
+
+function rowHTML(t){
+  const s=status(t), a=AR[t.a], c=CYC[t.c];
+  let stHTML="";
+  if(s.st==="done"){
+    stHTML='<div class="t-status done">Erledigt am '+fmt(s.date)+(s.left!=null?', wieder fällig in '+s.left+(s.left===1?' Tag':' Tagen'):'')+'</div>';
+  } else if(s.st==="due"){
+    stHTML='<div class="t-status due">Zuletzt erledigt am '+fmt(s.date)+', '+(s.over===0?'heute fällig':'fällig seit '+s.over+(s.over===1?' Tag':' Tagen'))+'</div>';
+  }
+  const cb="cb"+t.i;
+  return '<tr class="'+(s.st==="done"?"is-done":"")+'">'+
+    '<td class="c-check"><input type="checkbox" id="'+cb+'" data-id="'+esc(t.id)+'"'+(s.st==="done"?" checked":"")+'></td>'+
+    '<td class="c-task"><label class="t-name" for="'+cb+'">'+esc(t.n)+'</label><ol class="steps">'+t.s.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ol>'+stHTML+'</td>'+
+    '<td class="c-area"><span class="lab"><span class="sw '+a.c+'"></span>'+esc(a.name)+'</span></td>'+
+    '<td class="c-freq"><span class="fq">'+meter(c.lvl)+'<span>'+esc(c.name)+'</span></span></td>'+
+  '</tr>';
+}
+
+function render(){
+  const list=filtered();
+  const out=document.getElementById("out");
+  document.getElementById("count").textContent = list.length+" von "+TASKS.length+" Aufgaben angezeigt";
+  if(!list.length){
+    out.innerHTML='<div class="empty">Keine Aufgabe passt zu dieser Auswahl. Filter zurücksetzen oder den Suchbegriff ändern.</div>';
+    return;
+  }
+  let html="";
+  if(state.view==="cycle"){
+    CYCLES.forEach(c=>{
+      const g=list.filter(t=>t.c===c.k).sort((x,y)=>AREAS.findIndex(a=>a.k===x.a)-AREAS.findIndex(a=>a.k===y.a) || x.i-y.i);
+      if(!g.length) return;
+      html+='<section class="group"><h2>'+meter(c.lvl)+esc(c.name)+'</h2><p class="gsub">'+esc(c.sub)+' '+g.length+(g.length===1?' Aufgabe.':' Aufgaben.')+'</p>'+
+        '<div class="tablewrap"><table class="tasks hide-freq"><thead><tr><th class="c-check"><span class="sr">Erledigt</span></th><th class="c-task">Aufgabe und Arbeitsschritte</th><th class="c-area">Bereich</th><th class="c-freq">Rhythmus</th></tr></thead><tbody>'+
+        g.map(rowHTML).join("")+'</tbody></table></div></section>';
+    });
+  } else {
+    AREAS.forEach(a=>{
+      const g=list.filter(t=>t.a===a.k).sort((x,y)=>CYC[y.c].lvl-CYC[x.c].lvl || x.i-y.i);
+      if(!g.length) return;
+      html+='<section class="group"><h2><span class="sw '+a.c+'" style="width:22px;height:22px"></span>'+esc(a.name)+'</h2><p class="gsub">'+g.length+(g.length===1?' Aufgabe':' Aufgaben')+', vom häufigsten zum seltensten Rhythmus.</p>'+
+        '<div class="tablewrap"><table class="tasks hide-area"><thead><tr><th class="c-check"><span class="sr">Erledigt</span></th><th class="c-task">Aufgabe und Arbeitsschritte</th><th class="c-area">Bereich</th><th class="c-freq">Rhythmus</th></tr></thead><tbody>'+
+        g.map(rowHTML).join("")+'</tbody></table></div></section>';
+    });
+  }
+  out.innerHTML=html;
+}
+
+document.getElementById("out").addEventListener("change",e=>{
+  const el=e.target;
+  if(!el.matches('input[type="checkbox"][data-id]')) return;
+  const id=el.dataset.id;
+  if(el.checked) store[id]=todayStr(); else delete store[id];
+  save(); render();
+  const again=document.querySelector('input[data-id="'+CSS.escape(id)+'"]');
+  if(again) again.focus();
+});
+
+render();
+</script>
+</body>
+</html>
