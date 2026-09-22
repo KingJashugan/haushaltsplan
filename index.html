@@ -103,6 +103,16 @@ tr.is-done .t-name{text-decoration:line-through;text-decoration-thickness:1px;co
 tr.is-done ol.steps{opacity:.6}
 table.hide-area .c-area,table.hide-freq .c-freq{display:none}
 .empty{padding:30px;border:1px dashed var(--line);border-radius:8px;margin-top:30px;color:var(--muted)}
+td.c-actions{width:84px;white-space:nowrap}
+td.c-actions button{font:inherit;font-size:.95rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:4px 8px;border-radius:6px;cursor:pointer;margin-right:4px}
+td.c-actions button:hover{border-color:#cfc7b6}
+td.c-task input[type="text"],td.c-task textarea,td.c-area select,td.c-freq select{font:inherit;font-size:.95rem;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);width:100%;box-sizing:border-box}
+td.c-task textarea{min-height:76px;resize:vertical;margin-top:6px}
+tr.is-editing{background:var(--chip)}
+.addpanel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;margin:16px 0 0;display:grid;gap:10px;max-width:640px}
+.addpanel label{display:grid;gap:4px;font-size:.9rem}
+.addpanel .row{display:flex;gap:14px;flex-wrap:wrap}
+.addpanel .row label{flex:1 1 200px}
 
 /* Textabschnitte */
 section.info{padding:36px 0;border-top:1px solid var(--line)}
@@ -125,14 +135,14 @@ footer{padding:30px 0 50px;color:var(--muted);font-size:.88rem;border-top:1px so
   table.tasks tr{display:grid;grid-template-columns:36px 1fr;border-bottom:1px solid var(--line);padding:10px 12px}
   table.tasks tr:last-child{border-bottom:0}
   table.tasks td{border:0;padding:0}
-  td.c-check{grid-row:1 / span 3;width:auto}
-  td.c-area,td.c-freq{width:auto;margin-top:6px;grid-column:2}
+  td.c-check{grid-row:1 / span 4;width:auto}
+  td.c-area,td.c-freq,td.c-actions{width:auto;margin-top:6px;grid-column:2}
   .count{margin-left:0;width:100%}
   .controls{position:static}
   table.week th{width:90px}
 }
 @media print{
-  .controls,nav.jump,.cloths{display:none}
+  .controls,nav.jump,.cloths,.c-actions,#addTaskPanel{display:none}
   body{background:#fff;color:#000;font-size:11pt}
   .tablewrap{border:0}
   .group{break-inside:auto}
@@ -183,7 +193,24 @@ footer{padding:30px 0 50px;color:var(--muted);font-size:.88rem;border-top:1px so
       <button type="button" class="btn" id="exportBtn" title="Sicherungsdatei mit allen Häkchen herunterladen">Sicherung speichern</button>
       <button type="button" class="btn" id="importBtn" title="Zuvor gespeicherte Sicherungsdatei laden">Sicherung laden</button>
       <input type="file" id="importFile" accept="application/json" class="sr">
+      <button type="button" class="btn" id="addTaskBtn">+ Neue Aufgabe</button>
       <span class="count" id="count" aria-live="polite"></span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="addTaskPanel" hidden>
+  <div class="addpanel">
+    <strong>Neue Aufgabe hinzufügen</strong>
+    <div class="row">
+      <label>Bereich <select id="newArea"></select></label>
+      <label>Rhythmus <select id="newCycle"></select></label>
+    </div>
+    <label>Titel <input type="text" id="newTitle" placeholder="z. B. Fensterbank abwischen"></label>
+    <label>Arbeitsschritte (eine Zeile pro Schritt) <textarea id="newSteps" rows="3" placeholder="Erster Schritt&#10;Zweiter Schritt"></textarea></label>
+    <div class="row">
+      <button type="button" class="btn" id="addTaskSubmit">Hinzufügen</button>
+      <button type="button" class="btn" id="addTaskCancel">Abbrechen</button>
     </div>
   </div>
 </div>
@@ -272,6 +299,7 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 const stateRef = doc(db, "haushalt", "state");
+const tasksRef = doc(db, "haushalt", "tasks");
 
 const CYCLES = [
   {k:"N",  name:"Nach jeder Nutzung", days:1,   lvl:10, sub:"Direkt im Anschluss erledigen, dann entsteht kein Aufwand an anderer Stelle."},
@@ -576,7 +604,32 @@ const RAW = [
 
 const CYC = Object.fromEntries(CYCLES.map(c=>[c.k,c]));
 const AR  = Object.fromEntries(AREAS.map(a=>[a.k,a]));
-const TASKS = RAW.map((r,i)=>({id:r[0]+"|"+r[2], a:r[0], c:r[1], n:r[2], s:r[3].split("|"), i}));
+let TASKS = RAW.map((r,i)=>({id:"t"+i, a:r[0], c:r[1], n:r[2], s:r[3].split("|")}));
+function nextTaskId(){ return "t"+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+const TASKS_KEY = "haushaltsplan-aufgaben-v1";
+try{
+  const cachedTasks = JSON.parse(localStorage.getItem(TASKS_KEY) || "null");
+  if(Array.isArray(cachedTasks) && cachedTasks.length) TASKS = cachedTasks;
+}catch(e){}
+function saveTasksLocal(){ try{ localStorage.setItem(TASKS_KEY, JSON.stringify(TASKS)); }catch(e){} }
+function saveTasks(){
+  saveTasksLocal();
+  setDoc(tasksRef, { data: JSON.stringify(TASKS), updatedAt: Date.now() }).catch(()=>{});
+}
+let tasksCloudSeeded = false;
+onSnapshot(tasksRef, (snap)=>{
+  if(snap.metadata.hasPendingWrites) return;
+  if(!snap.exists()){
+    if(!tasksCloudSeeded){ tasksCloudSeeded = true; saveTasks(); }
+    return;
+  }
+  tasksCloudSeeded = true;
+  try{
+    const remote = JSON.parse(snap.data().data || "[]");
+    if(Array.isArray(remote) && remote.length){ TASKS = remote; saveTasksLocal(); render(); }
+  }catch(e){}
+}, ()=>{});
 
 const KEY = "haushaltsplan-erledigt-v1";
 let store = {};
@@ -604,6 +657,7 @@ onSnapshot(stateRef, (snap)=>{
 }, ()=>{});
 
 const state = { cycles:new Set(), area:"", q:"", view:"cycle", onlyOpen:false };
+let editingId = null;
 
 function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function dayNum(s){ const p=s.split("-").map(Number); return Math.round(Date.UTC(p[0],p[1]-1,p[2])/864e5); }
@@ -683,7 +737,25 @@ if(!window.matchMedia("(display-mode: standalone)").matches && !window.navigator
   document.getElementById("installHint").hidden = false;
 }
 
-document.getElementById("stats").textContent = TASKS.length+" Aufgaben in "+AREAS.length+" Bereichen und "+CYCLES.length+" Rhythmen";
+const newAreaSel = document.getElementById("newArea");
+AREAS.forEach(a=>{ const o=document.createElement("option"); o.value=a.k; o.textContent=a.name; newAreaSel.appendChild(o); });
+const newCycleSel = document.getElementById("newCycle");
+CYCLES.forEach(c=>{ const o=document.createElement("option"); o.value=c.k; o.textContent=c.name; newCycleSel.appendChild(o); });
+const addTaskPanel = document.getElementById("addTaskPanel");
+document.getElementById("addTaskBtn").addEventListener("click",()=>{ addTaskPanel.hidden=false; document.getElementById("newTitle").focus(); });
+document.getElementById("addTaskCancel").addEventListener("click",()=>{ addTaskPanel.hidden=true; });
+document.getElementById("addTaskSubmit").addEventListener("click",()=>{
+  const title = document.getElementById("newTitle").value.trim();
+  const steps = document.getElementById("newSteps").value.split("\n").map(x=>x.trim()).filter(Boolean);
+  if(!title){ alert("Bitte einen Titel eingeben."); return; }
+  if(!steps.length){ alert("Bitte mindestens einen Arbeitsschritt eingeben."); return; }
+  TASKS.push({ id: nextTaskId(), a: newAreaSel.value, c: newCycleSel.value, n: title, s: steps });
+  saveTasks();
+  document.getElementById("newTitle").value = "";
+  document.getElementById("newSteps").value = "";
+  addTaskPanel.hidden = true;
+  render();
+});
 
 function filtered(){
   return TASKS.filter(t=>{
@@ -698,7 +770,24 @@ function filtered(){
   });
 }
 
+function areaOptionsHTML(sel){ return AREAS.map(a=>'<option value="'+a.k+'"'+(a.k===sel?" selected":"")+'>'+esc(a.name)+'</option>').join(""); }
+function cycleOptionsHTML(sel){ return CYCLES.map(c=>'<option value="'+c.k+'"'+(c.k===sel?" selected":"")+'>'+esc(c.name)+'</option>').join(""); }
+
+function editRowHTML(t){
+  return '<tr class="is-editing" data-edit-id="'+esc(t.id)+'">'+
+    '<td class="c-check">✎</td>'+
+    '<td class="c-task">'+
+      '<input type="text" class="edit-title" value="'+esc(t.n)+'">'+
+      '<textarea class="edit-steps">'+esc(t.s.join("\n"))+'</textarea>'+
+    '</td>'+
+    '<td class="c-area"><select class="edit-area">'+areaOptionsHTML(t.a)+'</select></td>'+
+    '<td class="c-freq"><select class="edit-cycle">'+cycleOptionsHTML(t.c)+'</select></td>'+
+    '<td class="c-actions"><button type="button" class="btn-save-edit" data-id="'+esc(t.id)+'" title="Speichern">✓</button><button type="button" class="btn-cancel-edit" data-id="'+esc(t.id)+'" title="Abbrechen">✕</button></td>'+
+  '</tr>';
+}
+
 function rowHTML(t){
+  if(editingId===t.id) return editRowHTML(t);
   const s=status(t), a=AR[t.a], c=CYC[t.c];
   let stHTML="";
   if(s.st==="done"){
@@ -706,16 +795,18 @@ function rowHTML(t){
   } else if(s.st==="due"){
     stHTML='<div class="t-status due">Zuletzt erledigt am '+fmt(s.date)+', '+(s.over===0?'heute fällig':'fällig seit '+s.over+(s.over===1?' Tag':' Tagen'))+'</div>';
   }
-  const cb="cb"+t.i;
+  const cb="cb"+t.id;
   return '<tr class="'+(s.st==="done"?"is-done":"")+'">'+
     '<td class="c-check"><input type="checkbox" id="'+cb+'" data-id="'+esc(t.id)+'"'+(s.st==="done"?" checked":"")+'></td>'+
     '<td class="c-task"><label class="t-name" for="'+cb+'">'+esc(t.n)+'</label><ol class="steps">'+t.s.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ol>'+stHTML+'</td>'+
     '<td class="c-area"><span class="lab"><span class="sw '+a.c+'"></span>'+esc(a.name)+'</span></td>'+
     '<td class="c-freq"><span class="fq">'+meter(c.lvl)+'<span>'+esc(c.name)+'</span></span></td>'+
+    '<td class="c-actions"><button type="button" class="btn-edit" data-id="'+esc(t.id)+'" title="Bearbeiten">✎</button><button type="button" class="btn-delete" data-id="'+esc(t.id)+'" title="Löschen">🗑</button></td>'+
   '</tr>';
 }
 
 function render(){
+  document.getElementById("stats").textContent = TASKS.length+" Aufgaben in "+AREAS.length+" Bereichen und "+CYCLES.length+" Rhythmen";
   const list=filtered();
   const out=document.getElementById("out");
   document.getElementById("count").textContent = list.length+" von "+TASKS.length+" Aufgaben angezeigt";
@@ -726,18 +817,18 @@ function render(){
   let html="";
   if(state.view==="cycle"){
     CYCLES.forEach(c=>{
-      const g=list.filter(t=>t.c===c.k).sort((x,y)=>AREAS.findIndex(a=>a.k===x.a)-AREAS.findIndex(a=>a.k===y.a) || x.i-y.i);
+      const g=list.filter(t=>t.c===c.k).sort((x,y)=>AREAS.findIndex(a=>a.k===x.a)-AREAS.findIndex(a=>a.k===y.a));
       if(!g.length) return;
       html+='<section class="group"><h2>'+meter(c.lvl)+esc(c.name)+'</h2><p class="gsub">'+esc(c.sub)+' '+g.length+(g.length===1?' Aufgabe.':' Aufgaben.')+'</p>'+
-        '<div class="tablewrap"><table class="tasks hide-freq"><thead><tr><th class="c-check"><span class="sr">Erledigt</span></th><th class="c-task">Aufgabe und Arbeitsschritte</th><th class="c-area">Bereich</th><th class="c-freq">Rhythmus</th></tr></thead><tbody>'+
+        '<div class="tablewrap"><table class="tasks hide-freq"><thead><tr><th class="c-check"><span class="sr">Erledigt</span></th><th class="c-task">Aufgabe und Arbeitsschritte</th><th class="c-area">Bereich</th><th class="c-freq">Rhythmus</th><th class="c-actions"><span class="sr">Aktionen</span></th></tr></thead><tbody>'+
         g.map(rowHTML).join("")+'</tbody></table></div></section>';
     });
   } else {
     AREAS.forEach(a=>{
-      const g=list.filter(t=>t.a===a.k).sort((x,y)=>CYC[y.c].lvl-CYC[x.c].lvl || x.i-y.i);
+      const g=list.filter(t=>t.a===a.k).sort((x,y)=>CYC[y.c].lvl-CYC[x.c].lvl);
       if(!g.length) return;
       html+='<section class="group"><h2><span class="sw '+a.c+'" style="width:22px;height:22px"></span>'+esc(a.name)+'</h2><p class="gsub">'+g.length+(g.length===1?' Aufgabe':' Aufgaben')+', vom häufigsten zum seltensten Rhythmus.</p>'+
-        '<div class="tablewrap"><table class="tasks hide-area"><thead><tr><th class="c-check"><span class="sr">Erledigt</span></th><th class="c-task">Aufgabe und Arbeitsschritte</th><th class="c-area">Bereich</th><th class="c-freq">Rhythmus</th></tr></thead><tbody>'+
+        '<div class="tablewrap"><table class="tasks hide-area"><thead><tr><th class="c-check"><span class="sr">Erledigt</span></th><th class="c-task">Aufgabe und Arbeitsschritte</th><th class="c-area">Bereich</th><th class="c-freq">Rhythmus</th><th class="c-actions"><span class="sr">Aktionen</span></th></tr></thead><tbody>'+
         g.map(rowHTML).join("")+'</tbody></table></div></section>';
     });
   }
@@ -752,6 +843,44 @@ document.getElementById("out").addEventListener("change",e=>{
   save(); render();
   const again=document.querySelector('input[data-id="'+CSS.escape(id)+'"]');
   if(again) again.focus();
+});
+
+document.getElementById("out").addEventListener("click",e=>{
+  const editBtn=e.target.closest(".btn-edit");
+  if(editBtn){ editingId=editBtn.dataset.id; render(); return; }
+
+  const delBtn=e.target.closest(".btn-delete");
+  if(delBtn){
+    const id=delBtn.dataset.id;
+    const t=TASKS.find(x=>x.id===id);
+    if(t && confirm('"'+t.n+'" endgültig löschen?')){
+      TASKS=TASKS.filter(x=>x.id!==id);
+      if(store[id]!==undefined){ delete store[id]; save(); }
+      saveTasks();
+      render();
+    }
+    return;
+  }
+
+  const cancelBtn=e.target.closest(".btn-cancel-edit");
+  if(cancelBtn){ editingId=null; render(); return; }
+
+  const saveBtn=e.target.closest(".btn-save-edit");
+  if(saveBtn){
+    const id=saveBtn.dataset.id;
+    const t=TASKS.find(x=>x.id===id);
+    const tr=saveBtn.closest("tr");
+    if(t && tr){
+      const title=tr.querySelector(".edit-title").value.trim();
+      const steps=tr.querySelector(".edit-steps").value.split("\n").map(x=>x.trim()).filter(Boolean);
+      if(!title){ alert("Titel darf nicht leer sein."); return; }
+      if(!steps.length){ alert("Mindestens ein Arbeitsschritt wird benötigt."); return; }
+      t.n=title; t.s=steps; t.a=tr.querySelector(".edit-area").value; t.c=tr.querySelector(".edit-cycle").value;
+      saveTasks();
+    }
+    editingId=null;
+    render();
+  }
 });
 
 render();
