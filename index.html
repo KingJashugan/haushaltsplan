@@ -250,13 +250,29 @@ footer{padding:30px 0 50px;color:var(--muted);font-size:.88rem;border-top:1px so
   <h2>Grenzen des Plans</h2>
   <p>Die Rhythmen sind für einen Zwei-Personen-Haushalt ohne besondere Anforderungen angesetzt. Sie verschieben sich deutlich bei mehr Personen, Kleinkindern, Haustieren, Allergien, starkem Kochverhalten, hellen oder empfindlichen Böden, hartem Wasser oder einer Wohnung an einer verkehrsreichen Straße.</p>
   <p>Nicht enthalten sind Kinderbetreuung und Pflege von Angehörigen, Gartenarbeit außerhalb eines Balkons, Fahrzeugpflege sowie größere Renovierungen. Wer im Mietverhältnis welche Wartung schuldet (etwa Rauchwarnmelder, Treppenhaus, Winterdienst, Kleinreparaturen), regeln Landesrecht, Mietvertrag und Hausordnung unterschiedlich; das ist im Einzelfall zu prüfen.</p>
-  <p>Die Häkchen speichern nur das Erledigungsdatum in diesem Browser auf diesem Gerät. Nach Ablauf des Rhythmus erscheint eine Aufgabe wieder als fällig. Aufgaben mit dem Rhythmus „Bei Bedarf“ bleiben abgehakt, bis sie manuell zurückgesetzt werden.</p>
+  <p>Die Häkchen werden geräteübergreifend synchronisiert und speichern das Erledigungsdatum. Nach Ablauf des Rhythmus erscheint eine Aufgabe wieder als fällig. Aufgaben mit dem Rhythmus „Bei Bedarf“ bleiben abgehakt, bis sie manuell zurückgesetzt werden.</p>
 </section>
 
 <footer>Rhythmen als Orientierungswerte. Bei Geräten gelten die Angaben der Hersteller, bei Rechtsfragen die jeweils geltenden Regelungen.</footer>
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAtGo1CInFTHj7kbW6_LFl_tCD4PkoES50",
+  authDomain: "haushaltsplan-b2729.firebaseapp.com",
+  projectId: "haushaltsplan-b2729",
+  storageBucket: "haushaltsplan-b2729.firebasestorage.app",
+  messagingSenderId: "560349691458",
+  appId: "1:560349691458:web:9e0efea729d4b72a7777db",
+  measurementId: "G-Q9VRGETFRF"
+};
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+const stateRef = doc(db, "haushalt", "state");
+
 const CYCLES = [
   {k:"N",  name:"Nach jeder Nutzung", days:1,   lvl:10, sub:"Direkt im Anschluss erledigen, dann entsteht kein Aufwand an anderer Stelle."},
   {k:"T",  name:"Täglich",            days:1,   lvl:9,  sub:"Kurze Routinen, zusammen meist unter einer halben Stunde."},
@@ -565,8 +581,27 @@ const TASKS = RAW.map((r,i)=>({id:r[0]+"|"+r[2], a:r[0], c:r[1], n:r[2], s:r[3].
 const KEY = "haushaltsplan-erledigt-v1";
 let store = {};
 try { store = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch(e) { store = {}; }
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(store)); } catch(e) {} }
+function saveLocal(){ try { localStorage.setItem(KEY, JSON.stringify(store)); } catch(e) {} }
+function save(){
+  saveLocal();
+  setDoc(stateRef, { data: JSON.stringify(store), updatedAt: Date.now() }).catch(()=>{});
+}
 if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
+
+let cloudSeeded = false;
+onSnapshot(stateRef, (snap)=>{
+  if(snap.metadata.hasPendingWrites) return;
+  if(!snap.exists()){
+    if(!cloudSeeded){ cloudSeeded = true; save(); }
+    return;
+  }
+  cloudSeeded = true;
+  try{
+    store = JSON.parse(snap.data().data || "{}");
+    saveLocal();
+    render();
+  }catch(e){}
+}, ()=>{});
 
 const state = { cycles:new Set(), area:"", q:"", view:"cycle", onlyOpen:false };
 
@@ -613,7 +648,7 @@ document.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",(
 }));
 document.getElementById("onlyOpen").addEventListener("change",e=>{ state.onlyOpen=e.target.checked; render(); });
 document.getElementById("resetBtn").addEventListener("click",()=>{
-  if(confirm("Alle gespeicherten Häkchen auf diesem Gerät löschen?")){ store={}; save(); render(); }
+  if(confirm("Alle gespeicherten Häkchen auf allen Geräten löschen?")){ store={}; save(); render(); }
 });
 document.getElementById("printBtn").addEventListener("click",()=>window.print());
 
@@ -635,7 +670,7 @@ importFileEl.addEventListener("change",()=>{
     try{
       const data = JSON.parse(reader.result);
       if(typeof data !== "object" || data===null) throw new Error("ungültig");
-      if(confirm("Gespeicherte Sicherung laden? Aktuelle Häkchen auf diesem Gerät werden dabei ersetzt.")){
+      if(confirm("Gespeicherte Sicherung laden? Aktuelle Häkchen auf allen Geräten werden dabei ersetzt.")){
         store = data; save(); render();
       }
     }catch(e){ alert("Diese Datei ist keine gültige Sicherung."); }
